@@ -6,24 +6,29 @@ import LinearAlgebra
 include("data.jl")
 include("results.jl")
 
-# specify mulitknapsack problem's size and propoerties
-M = 5 # number of constraints/knapsacks
-N = 10 # number of decision variables/items
-T = 5 # if T == 0, fixed recourse; if T > 0, random recourse
+# instance = ARGS[1]
+instances = 1:10
+
+# specify mulitknapsack problem's size and properties
+M = 1 # number of constraints/knapsacks
+N = 5 # number of decision variables/items
+T = 6 # if T == 0, fixed recourse; if T > 0, random recourse
 α = 0.25 # tightness parameter
 
 # Specs
-TIME_LIMIT = 3600
+TIME_LIMIT = 3600.0
 MP_TIME_LIMIT = 1000
-GAP = 0.01
+GAP = 0.001
+ITERS_MAX = 4
+BIG_M = 1e3
+CONSTRAINT_TOL = 0.0
 
 # seeds for random instance generation
-instances = 1:10
-seeds = [12345, 12346, 12347, 12348, 12349, 123410,123411,123412, 123413, 123414]
+seeds = [141199, 70496, 51275, 120269, 170799, 50999, 261199, 123499, 432199, 99123]
 
 # empty spreadsheets to save results
 create_spreadsheet("reformulation")
-# create_spreadsheet("CCG")
+create_spreadsheet("CCG")
 
 for instance in instances
     # generate random instance for the mulitknapsack problem
@@ -32,8 +37,10 @@ for instance in instances
     # solve the reformulation model
     ReformSol = reformulation(ModelParams, TIME_LIMIT, GAP)
 
-    # solve CCG and save results across iterations 
+    # solve CCG and save results across iterations
+    CCGSol = CCG(ModelParams, ITERS_MAX, TIME_LIMIT, GAP, BIG_M, CONSTRAINT_TOL)
 
     # save the results
     reformulation_spreadsheet(ReformSol, instance)
+    ccg_spreadsheet(CCGSol, instance)
 end

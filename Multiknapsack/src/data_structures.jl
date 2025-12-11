@@ -44,7 +44,8 @@ end
     bound::Union{Float64, Nothing} = nothing
     gap::Union{Float64, Nothing} = nothing
     solvetime::Union{Float64, Nothing} = nothing
-    solution = nothing
+    x_sol = nothing
+    y_sol = nothing
     num_variables::Union{Int64, Nothing} = nothing
     num_constraints::Union{Int64, Nothing} = nothing
     num_quad_constraints::Union{Int64, Nothing} = nothing
@@ -52,31 +53,35 @@ end
 
 @kwdef mutable struct MPSolutionInfo
     status
-    objective::Union{Float64, Nothing}
-    bound::Float64
-    gap
-    solvetime::Float64
-    solution
-    num_variables::Int64
-    num_constraints::Int64
-    num_quad_constraints::Union{Int64, Nothing} = nothing
+    objective::Union{Float64, Nothing} = nothing
+    bound::Union{Float64, Nothing} = nothing
+    gap::Union{Float64, Nothing} = nothing
+    solvetime::Union{Float64, Nothing} = nothing
+    x_sol = nothing
+    y_sol = nothing
+    num_variables::Int64 = 0
+    num_constraints::Int64 = 0
+    num_quad_constraints::Int64 = 0
 end
 
 @kwdef mutable struct SPSolutionInfo
-    status
+    status = nothing
     objective::Union{Float64, Nothing}
-    bound::Float64
-    gap
-    solvetime::Float64
-    solution
-    basis_constraints::Vector{Int64}
-    basis_variables::Vector{Int64}
+    basis_constraints::Union{Vector{Int64}, Nothing}
+    basis_variables::Union{Vector{Int64}, Nothing}
 end
 
 @kwdef mutable struct CCGSolutionInfo
-    status
-    objective::Union{Float64, Nothing}
-    solvetime::Float64
-    num_iters::Int64
-    worst_constraint_violation::Float64
+    status = nothing
+    objective::Vector{Float64} = []
+    solvetime::Vector{Float64} = []
+    num_iters::Int64 = 0
+    worst_constraint_violation::Vector{Float64} = []
+    x_sol = nothing
+    y_sol = nothing
+    bases_constraints = Dict()
+    bases_variables = Dict()
+    num_variables::Int64 = 0
+    num_constraints::Int64 = 0
+    num_quad_constraints::Int64 = 0
 end
