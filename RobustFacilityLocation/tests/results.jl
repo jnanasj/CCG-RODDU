@@ -2,7 +2,7 @@
 
 function create_spreadsheet(method)
     if method == "reformulation"
-        filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_reformulation.xlsx")
+        filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
         XLSX.openxlsx(filename, mode = "w") do xf
             sheet = xf[1]
 
@@ -18,7 +18,7 @@ function create_spreadsheet(method)
         end
     end 
     if method == "CCG"
-        filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_ccg.xlsx")
+        filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
         XLSX.openxlsx(filename, mode = "w") do xf
             sheet = xf[1]
 
@@ -45,7 +45,7 @@ function create_spreadsheet(method)
 end
 
 function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instance_number)
-    filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_reformulation.xlsx")
+    filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
 
@@ -54,7 +54,7 @@ function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instanc
         sheet["B$(1+instance_number)"] = ReformSol.objective
         sheet["C$(1+instance_number)"] = ReformSol.gap
         sheet["D$(1+instance_number)"] = ReformSol.solvetime
-        # sheet["E$(1+instance_number)"] = ReformSol.status
+        sheet["E$(1+instance_number)"] = string(ReformSol.status)
         sheet["F$(1+instance_number)"] = ReformSol.num_variables
         sheet["G$(1+instance_number)"] = ReformSol.num_constraints
         sheet["H$(1+instance_number)"] = ReformSol.num_quad_constraints
@@ -62,7 +62,7 @@ function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instanc
 end
 
 function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
-    filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_ccg.xlsx")
+    filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
 

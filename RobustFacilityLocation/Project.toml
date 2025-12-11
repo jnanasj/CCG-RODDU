@@ -1,4 +1,4 @@
-name = "Multiknapsack"
+name = "RobustFacilityLocation"
 authors = ["Jnana Sai Jagana"]
 
 [deps]

@@ -1,29 +1,27 @@
 # using Pkg
 # Pkg.instantiate()
 
-using Multiknapsack
-# include("C:/Users/jagan024/Desktop/CCG-RODDU/Multiknapsack/src/Multiknapsack.jl")
+using RobustFacilityLocation
 using XLSX, Random
 import LinearAlgebra
 
-include("data.jl")
-include("results.jl")
+include("data.jl") # function to create random instance of the robust facility location problem
+include("results.jl") # function to save results to spreadsheets
 
-# instance = ARGS[1]
+# instance = 1
 instances = 1:10
 
-# specify mulitknapsack problem's size and properties
-M = 1 # number of constraints/knapsacks
-N = 5 # number of decision variables/items
-T = 6 # if T == 0, fixed recourse; if T > 0, random recourse
-α = 0.25 # tightness parameter
+# specify robust facility location problem's size and properties
+I = 10 # number of customers
+J = 5 # number of potential sites
+α = 0.01 # tightness parameter
 
 # Specs
 TIME_LIMIT = 3600.0
-MP_TIME_LIMIT = 1000
+MP_TIME_LIMIT = 1000.0
 GAP = 0.001
-ITERS_MAX = 4
-BIG_M = 1e3
+ITERS_MAX = 30
+BIG_M = 1e4
 CONSTRAINT_TOL = 0.0
 
 # seeds for random instance generation
@@ -35,13 +33,13 @@ create_spreadsheet("CCG")
 
 for instance in instances
     # generate random instance for the mulitknapsack problem
-    ModelParams = data_generator(M, N, T, α, seeds[instance])
+    ModelParams = data_generator(I, J, α, seeds[instance])
 
     # solve the reformulation model
     ReformSol = reformulation(ModelParams, TIME_LIMIT, GAP)
 
     # solve CCG and save results across iterations
-    CCGSol = CCG(ModelParams, ITERS_MAX, TIME_LIMIT, GAP, BIG_M, CONSTRAINT_TOL)
+    CCGSol = CCG(ModelParams, ITERS_MAX, TIME_LIMIT, MP_TIME_LIMIT, GAP, BIG_M, CONSTRAINT_TOL)
 
     # save the results
     reformulation_spreadsheet(ReformSol, instance)
