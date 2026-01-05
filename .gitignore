@@ -33,3 +33,7 @@ JuliaLocalPreferences.toml
 # other gurobi files
 .lp
 .mps
+
+# local run files
+main_function.jl
+local_job.jl

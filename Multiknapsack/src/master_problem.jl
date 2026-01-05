@@ -3,7 +3,7 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     masterproblem = Model(Gurobi.Optimizer)
     set_optimizer_attribute(masterproblem, "MIPGap", gap)
     set_optimizer_attribute(masterproblem, "TimeLimit", timelimit)
-    set_optimizer_attribute(masterproblem, MOI.Silent(), true)
+    # set_optimizer_attribute(masterproblem, MOI.Silent(), true)
 
     @variables(masterproblem, begin
         0 <= x[1:params.num_x] <= 1 # specific to mulitknapsack problems

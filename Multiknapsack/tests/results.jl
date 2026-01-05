@@ -1,6 +1,6 @@
 # Write results from reformulation and CCG to XLSX files
 
-function create_spreadsheet(method)
+function create_spreadsheet(method, M, N, T, α)
     if method == "reformulation"
         filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_reformulation.xlsx")
         XLSX.openxlsx(filename, mode = "w") do xf
@@ -38,13 +38,14 @@ function create_spreadsheet(method)
                 # instance results
                 sheet["A1"] = "iteration"
                 sheet["B1"] = "MP objective"
-                sheet["C1"] = "Worst violation"
+                sheet["C1"] = "MP gap"
+                sheet["D1"] = "Worst violation"
             end
         end
     end
 end
 
-function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instance_number)
+function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, solvetime_reform, instance_number, M, N, T, α)
     filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_reformulation.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
@@ -53,15 +54,16 @@ function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instanc
         sheet["A$(1+instance_number)"] = instance_number
         sheet["B$(1+instance_number)"] = ReformSol.objective
         sheet["C$(1+instance_number)"] = ReformSol.gap
-        sheet["D$(1+instance_number)"] = ReformSol.solvetime
-        # sheet["E$(1+instance_number)"] = ReformSol.status
+        # sheet["D$(1+instance_number)"] = ReformSol.solvetime
+        sheet["D$(1+instance_number)"] = solvetime_reform
+        sheet["E$(1+instance_number)"] = string(ReformSol.status)
         sheet["F$(1+instance_number)"] = ReformSol.num_variables
         sheet["G$(1+instance_number)"] = ReformSol.num_constraints
         sheet["H$(1+instance_number)"] = ReformSol.num_quad_constraints
     end
 end
 
-function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
+function ccg_spreadsheet(CCGSol::CCGSolutionInfo, solvetime_ccg, instance_number, M, N, T, α)
     filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_ccg.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
@@ -69,7 +71,8 @@ function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
         # summary sheet
         sheet["A$(1+instance_number)"] = instance_number
         sheet["B$(1+instance_number)"] = CCGSol.objective[end]
-        sheet["C$(1+instance_number)"] = sum(CCGSol.solvetime)
+        # sheet["C$(1+instance_number)"] = sum(CCGSol.solvetime)
+        sheet["C$(1+instance_number)"] = solvetime_ccg
         sheet["D$(1+instance_number)"] = CCGSol.num_iters
         sheet["E$(1+instance_number)"] = CCGSol.status
         sheet["F$(1+instance_number)"] = CCGSol.num_variables
@@ -82,7 +85,8 @@ function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
         for i in 1:CCGSol.num_iters
             sheet["A$(1+i)"] = i
             sheet["B$(i+1)"] = CCGSol.objective[i]
-            sheet["C$(i+1)"] = CCGSol.worst_constraint_violation[i]
+            sheet["C$(i+1)"] = CCGSol.gap[i]
+            sheet["D$(i+1)"] = CCGSol.worst_constraint_violation[i]
         end
     end
 end

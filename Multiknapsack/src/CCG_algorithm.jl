@@ -1,9 +1,9 @@
 # Column and constraint generation algorithm for robust optimization under decision dependent uncertainty
-function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64, mp_gap::Float64, big_M::Float64, sp_tol::Float64)
+function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64, mp_timelimit::Float64, mp_gap::Float64, big_M::Float64, sp_tol::Float64)
     CCGSol = CCGSolutionInfo() # initialization with no vertices
     for iter in 1:iter_max
         # solve master problem
-        MPSol = master_problem(params, CCGSol, iter, timelimit, mp_gap, big_M)
+        MPSol = master_problem(params, CCGSol, iter, mp_timelimit, mp_gap, big_M)
 
         #TODO: check if master problem reached time limit
 
@@ -14,6 +14,7 @@ function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64
         push!(CCGSol.objective, MPSol.objective)
         push!(CCGSol.solvetime, MPSol.solvetime + sp_solvetime)
         push!(CCGSol.worst_constraint_violation, SPSol.objective)
+        push!(CCGSol.gap, MPSol.gap)
         CCGSol.x_sol = MPSol.x_sol 
         CCGSol.y_sol = MPSol.y_sol # used as initial guess for next iteration
 

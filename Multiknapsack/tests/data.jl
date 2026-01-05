@@ -36,7 +36,7 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
         # constraints
         ModelParams.a = MKParams.weight_factor
         ModelParams.b = MKParams.weight_limit
-        for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) <= T)
+        for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) < T)
             ModelParams.Abar[m, (m-1)*N+n, n] = MKParams.weight_factor[m, n]
         end
 
@@ -46,12 +46,13 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
         # uncertainty set
         # ξ_mn >= 0
         ModelParams.W[1:M*N, :] = -LinearAlgebra.I(ModelParams.num_ξ)
-        # ξ_mn <= 2*x_n if |m-n| <= T
+        # ξ_mn <= 2*x_n if |m-n| < T
         ModelParams.W[M*N+1:2*M*N, :] = LinearAlgebra.I(ModelParams.num_ξ)
-        for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) <= T)
+        for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) < T)
             ModelParams.U[M*N + (m-1)*N+n, n] = 2
         end
         # ∑_m ξ_mn <= (M/5)x_n
+        # ModelParams.v[2*M*N+1:2*M*N+N] .= (M/5)
         ModelParams.U[2*M*N+1:2*M*N+N, :] .= (M/5)*LinearAlgebra.I(N)
         for m in 1:M, n in 1:N
             ModelParams.W[2*M*N+n, (m-1)*N+n] = 1

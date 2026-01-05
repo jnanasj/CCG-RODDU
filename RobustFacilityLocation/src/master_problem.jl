@@ -85,6 +85,10 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
         y_sol = value.(y)
 
         # TODO: add error messages for infeasible or unbounded master problem; in case of unbounded, one resolution could be to add a vertex in the first iteration
+    else
+        compute_conflict!(masterproblem)
+        iis_model, _ = copy_conflict(masterproblem)
+        write_to_file(iis_model, "iis.lp")
     end
     solvetime = solve_time(masterproblem)
     num_variables = JuMP.num_variables(masterproblem)

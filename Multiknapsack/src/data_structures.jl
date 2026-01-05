@@ -77,6 +77,7 @@ end
     solvetime::Vector{Float64} = []
     num_iters::Int64 = 0
     worst_constraint_violation::Vector{Float64} = []
+    gap::Vector{Float64} = []
     x_sol = nothing
     y_sol = nothing
     bases_constraints = Dict()

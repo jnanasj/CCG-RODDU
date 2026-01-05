@@ -2,7 +2,7 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
     reformulation = Model(Gurobi.Optimizer)
     set_optimizer_attribute(reformulation, "TimeLimit", timelimit)
     set_optimizer_attribute(reformulation, "MIPGap", gap)
-    set_optimizer_attribute(reformulation, MOI.Silent(), true)
+    # set_optimizer_attribute(reformulation, MOI.Silent(), true)
 
     # model variables
     @variables(reformulation, begin

@@ -1,6 +1,7 @@
 @kwdef mutable struct RobustFacilityLocationParams
     I::Int64 # number of customers
     J::Int64 # number of potential sites
+    J_i = nothing # neighbours
     α::Float64 # tightness parameter
 
     fixed_cost::Vector{Float64} = zeros(J) # fixed cost of building site j
