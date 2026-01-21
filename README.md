@@ -1,2 +1,2 @@
 # CCG-RODDU
-A column and constraint generation algorithm for robust optimization under decision-dependent polyhedral uncertainty
+A parametric cutting plane algorithm for robust optimization under decision-dependent polyhedral uncertainty. The method ulitmately results in a column-and-constraint generation scheme, hence the name of the repository.
