@@ -68,8 +68,8 @@ function data_generator(num_nodes::Int64, α::Float64, seed)
     ModelParams.U[ModelParams.num_ξ+1:2*ModelParams.num_ξ, 1:ModelParams.num_x] = -0.2*LinearAlgebra.I(ModelParams.num_ξ)
 
     ModelParams.W[ModelParams.num_ξset, 1:ModelParams.num_ξ] .= 1
-    ModelParams.U[ModelParams.num_ξset, 1:ModelParams.num_x] .= -0.2
-    ModelParams.v[ModelParams.num_ξset] = round(SPParams.num_edges/5)
+    # ModelParams.U[ModelParams.num_ξset, 1:ModelParams.num_x] .= -0.2
+    ModelParams.v[ModelParams.num_ξset] = 2
     
     return ModelParams
 end

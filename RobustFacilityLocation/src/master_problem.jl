@@ -10,14 +10,14 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
         y[1:params.num_y]
     end)
     # specific to robust facility location
-    set_binary.(x[1:params.num_x_bin])
+    set_binary.(y[params.num_y-params.num_y_bin:params.num_y-1])
     set_lower_bound.(y[1:(params.num_y-1)], 0.0)
 
     # uncertain parameters from active constraints
     ξbases = Dict(i => @variable(masterproblem, [1:params.num_ξ]) for i in eachindex(sol.bases_constraints))
 
     # uncertain parameter projections onto uncertainty set
-    ξbases_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
+    ξbases_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0, upper_bound = 25.0) for i in eachindex(sol.bases_constraints))
 
     # projection distances
     tbases = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
@@ -73,8 +73,6 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     end
 
     optimize!(masterproblem)
-
-    write_to_file(masterproblem, "mp.lp")
 
     status = termination_status(masterproblem)
     if status == MOI.OPTIMAL || status == MOI.TIME_LIMIT

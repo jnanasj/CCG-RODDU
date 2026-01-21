@@ -5,45 +5,46 @@ function data_generator(I::Int64, J::Int64, α::Float64, seed)
     # Generate random instance of the robust facility location problem
     RFLParams = RobustFacilityLocationParams(I=I, J=J, α=α)
 
-    RFLParams.J_i = Dict(i => rand(Xoshiro(seed+i), 1:J, rand(Xoshiro(seed+2*i), 1:(J-1))) for i in 1:I)
+    RFLParams.J_i = Dict(i => randperm(Xoshiro(seed+i), J)[1:rand(Xoshiro(seed+2*i), 1:(J-1))] for i in 1:I)
 
-    RFLParams.fixed_cost = 50 * rand(rng, J)
-    RFLParams.variable_cost = 10 * rand(rng, J) .+ 5
+    RFLParams.fixed_cost = 100 * rand(rng, J) .+ 100
+    RFLParams.variable_cost = 15 * rand(rng, J) .+ 15
     RFLParams.transport_cost = 5 * rand(rng, I, J) .+ 5
     for i in 1:I, j in RFLParams.J_i[i]
         RFLParams.transport_cost[i, j] = RFLParams.transport_cost[i, j] - 3
     end
-    RFLParams.price = 5 * rand(rng, I) .+ 15
+    RFLParams.price = 20 * rand(rng, I) .+ 5
 
-    RFLParams.capacity_min = rand(rng, J) .+ 1
-    RFLParams.capacity_max = 10 * rand(rng, J) .+ 3
+    RFLParams.capacity_min = 5*rand(rng, J) .+ 5
+    RFLParams.capacity_max = 10 * rand(rng, J) .+ 50
 
-    RFLParams.demand_nominal = rand(rng, I)
-    RFLParams.demand_min_deviation = 0.02 * ones(I, J)
-    RFLParams.demand_max_deviation = 0.04 * ones(I, J)
+    RFLParams.demand_nominal = rand(rng, I) .+ 1
+    RFLParams.demand_min_deviation = 0.0 * ones(I, J)
+    RFLParams.demand_max_deviation = 0.4 * ones(I, J)
 
     # Convert robust facility location problem to general model
-    ModelParams = GeneralModelParameters(num_x=2 * J, num_x_bin=J, num_y=I * J + 1, num_ξ=I, num_cons=(3 * J + 1), num_ξcons=I, num_ξset=(2 * I + 1))
+    ModelParams = GeneralModelParameters(num_x=J, num_y=I * J + J + 1, num_y_bin = J, num_ξ=I, num_cons=(3 * J + I + 1), num_ξcons=I, num_ξset=(2 * I + 1))
 
     # objective function
-    ModelParams.cost_x[1:J] = RFLParams.fixed_cost
-    ModelParams.cost_x[J+1:2*J] = RFLParams.variable_cost
+    ModelParams.cost_x[1:J] = RFLParams.variable_cost
+    ModelParams.cost_y[I*J+1:I*J+J] = RFLParams.fixed_cost
     ModelParams.cost_y[ModelParams.num_y] = 1
 
     # constraints without uncertainty
     # construction capacity limits
-    ModelParams.Atilde[1:J, 1:J] = LinearAlgebra.Diagonal(RFLParams.capacity_min)
-    ModelParams.Atilde[1:J, J+1:2*J] = -LinearAlgebra.I(J)
+    ModelParams.Dtilde[1:J, I*J+1:I*J+J] = LinearAlgebra.Diagonal(RFLParams.capacity_min)
+    ModelParams.Atilde[1:J, 1:J] = -LinearAlgebra.I(J)
 
-    ModelParams.Atilde[J+1:2*J, 1:J] = -LinearAlgebra.Diagonal(RFLParams.capacity_max)
-    ModelParams.Atilde[J+1:2*J, J+1:2*J] = LinearAlgebra.I(J)
+    ModelParams.Dtilde[J+1:2*J, I*J+1:I*J+J] = -LinearAlgebra.Diagonal(RFLParams.capacity_max)
+    ModelParams.Atilde[J+1:2*J, 1:J] = LinearAlgebra.I(J)
 
     # capacity limit on demand
-    ModelParams.Atilde[2*J+1:3*J, J+1:2*J] = -LinearAlgebra.I(J)
+    ModelParams.Atilde[2*J+1:3*J, 1:J] = -LinearAlgebra.I(J)
     ModelParams.Dtilde[2*J+1:3*J, 1:I*J] = [mod(k, J) == j-1 ? 1 : 0 for j in 1:J, k in 1:I*J] # ∑_i y_{ij}
 
-    # ModelParams.Atilde[3*J+1, 1:J] .= -1
-    # ModelParams.btilde[3*J+1] = -2
+    # satisfy nominal demand
+    ModelParams.Dtilde[3*J+1:3*J+I, 1:I*J] = [((i - 1) * J < k && k <= i * J) ? -1 : 0 for i in 1:I, k in 1:I*J] # -∑_j y_{ij}
+    ModelParams.btilde[3*J+1:3*J+I] = -RFLParams.demand_nominal
 
     # epigraph reformulation
     ModelParams.Dtilde[ModelParams.num_cons, ModelParams.num_y] = -1
@@ -72,7 +73,7 @@ function data_generator(I::Int64, J::Int64, α::Float64, seed)
 
     # \sum_i \xi_i <= 
     ModelParams.W[2*I+1, 1:I] .= 1.0
-    ModelParams.U[2*I+1, J+1:2*J] .= RFLParams.α / sum(RFLParams.demand_nominal)
+    ModelParams.U[2*I+1, 1:J] .= RFLParams.α / sum(RFLParams.demand_nominal)
 
-    return ModelParams
+    return RFLParams, ModelParams
 end

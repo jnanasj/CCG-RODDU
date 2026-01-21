@@ -53,7 +53,7 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
         end
         # ∑_m ξ_mn <= (M/5)x_n
         # ModelParams.v[2*M*N+1:2*M*N+N] .= (M/5)
-        ModelParams.U[2*M*N+1:2*M*N+N, :] .= (M/5)*LinearAlgebra.I(N)
+        ModelParams.U[2*M*N+1:2*M*N+N, :] .= (M/(α*N))*LinearAlgebra.I(N)
         for m in 1:M, n in 1:N
             ModelParams.W[2*M*N+n, (m-1)*N+n] = 1
         end

@@ -2,7 +2,7 @@
 
 function create_spreadsheet(method)
     if method == "reformulation"
-        filename = string("I", num_nodes, "_reformulation.xlsx")
+        filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
         XLSX.openxlsx(filename, mode = "w") do xf
             sheet = xf[1]
 
@@ -18,7 +18,7 @@ function create_spreadsheet(method)
         end
     end 
     if method == "CCG"
-        filename = string("I", num_nodes, "_ccg.xlsx")
+        filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
         XLSX.openxlsx(filename, mode = "w") do xf
             sheet = xf[1]
 
@@ -45,7 +45,7 @@ function create_spreadsheet(method)
 end
 
 function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instance_number)
-    filename = string("I", num_nodes, "_reformulation.xlsx")
+    filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
 
@@ -62,7 +62,7 @@ function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instanc
 end
 
 function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
-    filename = string("I", num_nodes, "_ccg.xlsx")
+    filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
 

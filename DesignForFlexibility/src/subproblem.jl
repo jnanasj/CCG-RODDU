@@ -19,11 +19,11 @@ function subproblems(params::GeneralModelParameters, MPSol::MPSolutionInfo, cons
 
     if status == MOI.OPTIMAL
         for n in 1:params.num_ξcons
-            @objective(subproblem, Max, params.a[n, :]'MPSol.x_sol + params.d[n, :]'MPSol.y_sol - params.b[n] + (params.Abar[n, :, :] * MPSol.x_sol + params.Dbar[n, :, :] * MPSol.y_sol - params.bbar[n, :])'ξ)
+            @objective(subproblem, Max, params.a[n, :]'MPSol.x_sol + params.d[n, :]'MPSol.y_sol - params.b[n] + (params.Abar[n] * MPSol.x_sol + params.Dbar[n] * MPSol.y_sol - params.bbar[n, :])'ξ)
 
             optimize!(subproblem)
 
-            objective_constraint_n = round(objective_value(subproblem), digits = 6)
+            objective_constraint_n = round(objective_value(subproblem), digits = 5)
             if (objective_constraint_n - objective) > constraint_tol # finds worst constraint violation
                 basis_constraints = []
                 basis_variables = []

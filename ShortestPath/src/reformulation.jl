@@ -10,6 +10,7 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
         y[1:params.num_y]
     end)
     # specific to shortest path problem
+    set_binary.(x)
     set_binary.(y[1:(params.num_y_bin)])
 
     # dual variables

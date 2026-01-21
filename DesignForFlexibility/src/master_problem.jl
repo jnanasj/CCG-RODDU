@@ -6,23 +6,25 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     # set_optimizer_attribute(masterproblem, MOI.Silent(), true)
 
     @variables(masterproblem, begin
-        0 <= x[1:params.num_x] <= 1 # specific to shortest path problem
+        x[1:params.num_x]
         y[1:params.num_y]
-        0 <= ξ[1:params.num_ξ] <= 1
+        ξ[1:params.num_ξ]
     end)
-    # specific to shortest path problem: 
-    set_binary.(x)
-    set_binary.(y[1:params.num_y_bin])
-    
-    # linearization terms for ξ_e y_e
-    @variable(masterproblem, Ylin[1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0)
+    # specific to compressor train case study
+    set_binary.(y[params.num_y-params.num_y_bin+1:params.num_y])
+    set_lower_bound.(x, params.lower_x)
+    set_upper_bound.(x, params.upper_x)
+    set_lower_bound.(y[2:params.num_y], params.lower_y[2:params.num_y])
+    set_upper_bound.(y[2:params.num_y], params.upper_y[2:params.num_y])
+
+    set_lower_bound.(ξ, params.lower_ξ)
+    set_upper_bound.(ξ, params.upper_ξ)
 
     # uncertain parameters from active constraints
     ξbases = Dict(i => @variable(masterproblem, [1:params.num_ξ]) for i in eachindex(sol.bases_constraints))
 
     # uncertain parameter projections onto uncertainty set
     ξbases_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
-    Ylin_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
 
     # projection distances
     tbases = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
@@ -39,23 +41,11 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
 
     # constraints without uncertainty
     @constraint(masterproblem, params.Atilde * x + params.Dtilde * y .<= params.btilde)
-    # constraints with linearized y_e ξ_e
-    @constraints(masterproblem, begin
-        [n in 1:params.num_ξcons], params.a[n, :]'x + params.d[n, :]'y + sum(params.Dbar[n, i, i] * Ylin[i] for i in 1:params.num_ξ) <= params.b[n] + ξ'params.bbar[n, :]
-        Ylin <= ξ
-        Ylin >= ξ - big_M * (1 .- y[1:params.num_y_bin])
-        Ylin <= big_M * y[1:params.num_y_bin]
-    end)
-    # @constraint(masterproblem, [n in 1:params.num_ξcons], params.a[n, :]'x + ξ'params.Abar[n, :, :] * x + params.d[n, :]'y + ξ'params.Dbar[n, :, :] * y <= params.b[n] + ξ'params.bbar[n, :])
 
     @constraints(masterproblem, begin
         # constraints with uncertainty
-        # constraints with linearized y_e ξ_e
-        [k in eachindex(sol.bases_constraints), n in 1:params.num_ξcons], params.a[n, :]'x + params.d[n, :]'y + sum(params.Dbar[n, i, i] * Ylin_proj[k][i] for i in 1:params.num_ξ) <= params.b[n] + ξbases_proj[k]'params.bbar[n, :]
-
-        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] <= ξbases_proj[k]
-        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] >= ξbases_proj[k] - big_M * (1 .- y[1:params.num_y_bin])
-        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] <= big_M * y[1:params.num_y_bin]
+        [n in 1:params.num_ξcons], params.a[n, :]'x + ξ'params.Abar[n] * x + params.d[n, :]'y + ξ'params.Dbar[n] * y <= params.b[n] + ξ'params.bbar[n, :]
+        [k in eachindex(sol.bases_constraints), n in 1:params.num_ξcons], params.a[n, :]'x + ξbases_proj[k]'params.Abar[n] * x + params.d[n, :]'y + ξbases_proj[k]'params.Dbar[n] * y <= params.b[n] + ξbases_proj[k]'params.bbar[n, :]
 
         # active constraints
         [k in eachindex(sol.bases_constraints)], params.W[sol.bases_constraints[k], sol.bases_variables[k]] * ξbases[k][sol.bases_variables[k]] .== params.v[sol.bases_constraints[k]] + params.U[sol.bases_constraints[k], :] * x
@@ -88,6 +78,8 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
 
     optimize!(masterproblem)
 
+    # write_to_file(masterproblem, "mp_1.lp")
+
     status = termination_status(masterproblem)
     if status == MOI.OPTIMAL || status == MOI.TIME_LIMIT
         objective = objective_value(masterproblem)
@@ -97,6 +89,10 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
         y_sol = value.(y)
 
         # TODO: add error messages for infeasible or unbounded master problem; in case of unbounded, one resolution could be to add a vertex in the first iteration
+    else
+        compute_conflict!(masterproblem)
+        iis_model, _ = copy_conflict(masterproblem)
+        write_to_file(iis_model, "iis.lp")
     end
     solvetime = solve_time(masterproblem)
     num_variables = JuMP.num_variables(masterproblem)

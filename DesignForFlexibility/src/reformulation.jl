@@ -2,16 +2,20 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
     reformulation = Model(Gurobi.Optimizer)
     set_optimizer_attribute(reformulation, "TimeLimit", timelimit)
     set_optimizer_attribute(reformulation, "MIPGap", gap)
+    set_optimizer_attribute(reformulation, "DualReductions", 0)
     # set_optimizer_attribute(reformulation, MOI.Silent(), true)
 
     # model variables
     @variables(reformulation, begin
-        x[1:params.num_x] >= 0
+        x[1:params.num_x]
         y[1:params.num_y]
     end)
-    # specific to robust facility location
-    set_binary.(y[params.num_y-params.num_y_bin:params.num_y-1])
-    set_lower_bound.(y[1:(params.num_y-1)], 0.0)
+    # specific to compressor train case study
+    set_binary.(y[params.num_y-params.num_y_bin+1:params.num_y])
+    set_lower_bound.(x, params.lower_x)
+    set_upper_bound.(x, params.upper_x)
+    set_lower_bound.(y[2:params.num_y], params.lower_y[2:params.num_y])
+    set_upper_bound.(y[2:params.num_y], params.upper_y[2:params.num_y])
 
     # dual variables
     δ = Dict(n => @variable(reformulation, [1:params.num_ξset], lower_bound = 0.0) for n = 1:params.num_ξcons)
@@ -23,7 +27,7 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
             params.Atilde * x + params.Dtilde * y .<= params.btilde
 
             #constraints with uncertainty
-            [n in 1:params.num_ξcons], params.W'δ[n] .>= (params.Abar[n, :, :] * x + params.Dbar[n, :, :] * y - params.bbar[n, :])
+            [n in 1:params.num_ξcons], params.W'δ[n] .>= (params.Abar[n] * x + params.Dbar[n] * y - params.bbar[n, :])
 
             # Constraints with bilinear terms
             [n in 1:params.num_ξcons], (params.v + params.U * x)'δ[n] <= params.b[n] - params.a[n, :]'x - params.d[n, :]'y
