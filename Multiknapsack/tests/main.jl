@@ -1,5 +1,6 @@
 # using Pkg
 # Pkg.activate(".")
+# Pkg.resolve()
 # Pkg.instantiate()
 
 using Multiknapsack
@@ -9,7 +10,7 @@ import LinearAlgebra
 include("data.jl")
 include("results.jl")
 
-# instance = ARGS[1]
+instance = 1
 instances = 1:10
 
 # problem_properties = Dict("1" => [5, 10, 1, 0.25],
@@ -38,10 +39,10 @@ instances = 1:10
 # T = Int(problem_properties[ARGS[1]][3]) # if T == 0, fixed recourse; if T > 0, random recourse
 # α = problem_properties[ARGS[1]][4] # tightness parameter
 
-M = 20 # number of constraints/knapsacks
-N = 100 # number of decision variables/items
-T = 1 # if T == 0, fixed recourse; if T > 0, random recourse
-α = 0.50 # tightness parameter
+M = 10 # number of constraints/knapsacks
+N = 20 # number of decision variables/items
+T = 10 # if T == 0, fixed recourse; if T > 0, random recourse
+α = 0.25 # tightness parameter
 
 # Specs
 TIME_LIMIT = 3600.0
@@ -50,6 +51,7 @@ GAP = 0.001
 ITERS_MAX = 50
 BIG_M = 5e3
 CONSTRAINT_TOL = 0.0
+MULTI_CUT = true
 
 # seeds for random instance generation
 seeds = [12345, 54321, 23456, 65432, 34567, 76543, 45678, 87654, 56789, 98765]
@@ -66,7 +68,7 @@ for instance in instances
     solvetime_reform = @elapsed ReformSol = reformulation(ModelParams, TIME_LIMIT, GAP)
 
     # solve CCG and save results across iterations
-    solvetime_ccg = @elapsed CCGSol = CCG(ModelParams, ITERS_MAX, TIME_LIMIT, MP_TIME_LIMIT, GAP, BIG_M, CONSTRAINT_TOL)
+    solvetime_ccg = @elapsed CCGSol = CCG(ModelParams, ITERS_MAX, MULTI_CUT, TIME_LIMIT, MP_TIME_LIMIT, GAP, BIG_M, CONSTRAINT_TOL)
 
     # save the results
     reformulation_spreadsheet(ReformSol, solvetime_reform, instance, M, N, T, α)

@@ -67,8 +67,8 @@ end
 @kwdef mutable struct SPSolutionInfo
     status = nothing
     objective::Union{Float64, Nothing}
-    basis_constraints::Union{Vector{Int64}, Nothing}
-    basis_variables::Union{Vector{Int64}, Nothing}
+    basis_constraints = Dict()
+    basis_variables = Dict()
 end
 
 @kwdef mutable struct CCGSolutionInfo

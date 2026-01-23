@@ -1,5 +1,5 @@
 # Column and constraint generation algorithm for robust optimization under decision dependent uncertainty
-function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64, mp_timelimit::Float64, mp_gap::Float64, big_M::Float64, sp_tol::Float64)
+function CCG(params::GeneralModelParameters, iter_max::Int64, multi_cut::Bool, timelimit::Float64, mp_timelimit::Float64, mp_gap::Float64, big_M::Float64, sp_tol::Float64)
     CCGSol = CCGSolutionInfo() # initialization with no vertices
     for iter in 1:iter_max
         # solve master problem
@@ -8,7 +8,7 @@ function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64
         #TODO: check if master problem reached time limit
 
         # find worst constraint violation in master problem's solution
-        sp_solvetime = @elapsed SPSol = subproblems(params, MPSol, sp_tol)
+        sp_solvetime = @elapsed SPSol = subproblems(multi_cut, params, MPSol, iter, sp_tol)
 
         # update solution info
         push!(CCGSol.objective, MPSol.objective)
@@ -40,8 +40,8 @@ function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64
             CCGSol.num_quad_constraints = MPSol.num_quad_constraints
             break
         else
-            CCGSol.bases_constraints[iter] = SPSol.basis_constraints
-            CCGSol.bases_variables[iter] = SPSol.basis_variables
+            CCGSol.bases_constraints = merge(CCGSol.bases_constraints, SPSol.basis_constraints)
+            CCGSol.bases_variables = merge(CCGSol.bases_variables, SPSol.basis_variables)
         end
     end
     return CCGSol
