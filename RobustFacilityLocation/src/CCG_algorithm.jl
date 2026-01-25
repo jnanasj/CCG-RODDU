@@ -31,6 +31,8 @@ function CCG(params::GeneralModelParameters, iter_max::Int64, timelimit::Float64
             CCGSol.num_variables = MPSol.num_variables
             CCGSol.num_constraints = MPSol.num_constraints
             CCGSol.num_quad_constraints = MPSol.num_quad_constraints
+            CCGSol.bases_constraints[iter] = SPSol.basis_constraints
+            CCGSol.bases_variables[iter] = SPSol.basis_variables
         elseif sum(CCGSol.solvetime) >= timelimit
             CCGSol.status = "TIME LIMIT REACHED"
             CCGSol.num_iters = iter

@@ -13,14 +13,14 @@ function data_generator(I::Int64, J::Int64, α::Float64, seed)
     for i in 1:I, j in RFLParams.J_i[i]
         RFLParams.transport_cost[i, j] = RFLParams.transport_cost[i, j] - 3
     end
-    RFLParams.price = 20 * rand(rng, I) .+ 5
+    RFLParams.price = 20 * rand(rng, I) .+ 10
 
     RFLParams.capacity_min = 5*rand(rng, J) .+ 5
     RFLParams.capacity_max = 10 * rand(rng, J) .+ 50
 
     RFLParams.demand_nominal = rand(rng, I) .+ 1
-    RFLParams.demand_min_deviation = 0.0 * ones(I, J)
-    RFLParams.demand_max_deviation = 0.4 * ones(I, J)
+    RFLParams.demand_min_deviation = 0.01 * ones(I, J)
+    RFLParams.demand_max_deviation = 0.02 * ones(I, J)
 
     # Convert robust facility location problem to general model
     ModelParams = GeneralModelParameters(num_x=J, num_y=I * J + J + 1, num_y_bin = J, num_ξ=I, num_cons=(3 * J + I + 1), num_ξcons=I, num_ξset=(2 * I + 1))
@@ -71,9 +71,9 @@ function data_generator(I::Int64, J::Int64, α::Float64, seed)
         ModelParams.U[I+i, j] = RFLParams.demand_max_deviation[i, j]
     end
 
-    # \sum_i \xi_i <= 
-    ModelParams.W[2*I+1, 1:I] .= 1.0
-    ModelParams.U[2*I+1, 1:J] .= RFLParams.α / sum(RFLParams.demand_nominal)
+    # \sum_i \xi_i >= 
+    ModelParams.W[2*I+1, 1:I] .= -1.0
+    ModelParams.U[2*I+1, 1:J] .= -RFLParams.α
 
     return RFLParams, ModelParams
 end
