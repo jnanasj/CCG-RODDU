@@ -42,11 +42,14 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
     reformulation_solution.num_quad_constraints = num_constraints(reformulation, JuMP.QuadExpr, MOI.LessThan{Float64})
 
     if reformulation_solution.status == MOI.OPTIMAL || reformulation_solution.status == MOI.TIME_LIMIT || reformulation_solution.status == MOI.LOCALLY_SOLVED
-        reformulation_solution.objective = objective_value(reformulation)
-        reformulation_solution.bound = objective_bound(reformulation)
-        reformulation_solution.gap = 100 * abs(reformulation_solution.objective - reformulation_solution.bound) / ((1e-10) + abs(reformulation_solution.objective))
-        reformulation_solution.x_sol = value.(x)
-        reformulation_solution.y_sol = value.(y)
+        try
+            reformulation_solution.objective = objective_value(reformulation)
+            reformulation_solution.bound = objective_bound(reformulation)
+            reformulation_solution.gap = 100 * abs(reformulation_solution.objective - reformulation_solution.bound) / ((1e-10) + abs(reformulation_solution.objective))
+            reformulation_solution.x_sol = value.(x)
+            reformulation_solution.y_sol = value.(y)
+        catch 
+        end 
     end
     return reformulation_solution
 end

@@ -77,8 +77,8 @@ end
 @kwdef mutable struct SPSolutionInfo
     status = nothing
     objective::Union{Float64, Nothing}
-    basis_constraints::Union{Vector{Int64}, Nothing}
-    basis_variables::Union{Vector{Int64}, Nothing}
+    basis_constraints = Dict()
+    basis_variables = Dict()
 end
 
 @kwdef mutable struct CCGSolutionInfo
@@ -87,6 +87,7 @@ end
     solvetime::Vector{Float64} = []
     num_iters::Int64 = 0
     worst_constraint_violation::Vector{Float64} = []
+    gap::Vector{Float64} = []
     x_sol = nothing
     y_sol = nothing
     bases_constraints = Dict()

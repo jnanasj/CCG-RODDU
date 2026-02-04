@@ -1,8 +1,9 @@
 # subproblems in CCG algorithm
-function subproblems(params::GeneralModelParameters, MPSol::MPSolutionInfo, constraint_tol::Float64=1e-5)
-    basis_constraints = nothing
-    basis_variables = nothing
+function subproblems(multi_cut::Bool, params::GeneralModelParameters, MPSol::MPSolutionInfo, iter::Int64, constraint_tol::Float64=1e-5)
+    bases_constraints = Dict()
+    bases_variables = Dict()
     objective = 0.0
+    worst_objective = 0.0
 
     # define subproblems
     # subproblems have the same feasible region for a given master problem solution
@@ -18,6 +19,7 @@ function subproblems(params::GeneralModelParameters, MPSol::MPSolutionInfo, cons
     status = termination_status(subproblem)
 
     if status == MOI.OPTIMAL
+        cut_id = 1
         for n in 1:params.num_ξcons
             @objective(subproblem, Max, params.a[n, :]'MPSol.x_sol + params.d[n, :]'MPSol.y_sol - params.b[n] + (params.Abar[n, :, :] * MPSol.x_sol + params.Dbar[n, :, :] * MPSol.y_sol - params.bbar[n, :])'ξ)
 
@@ -40,10 +42,30 @@ function subproblems(params::GeneralModelParameters, MPSol::MPSolutionInfo, cons
                     end
                 end
                 # update worst constraint violation
-                objective = objective_constraint_n
+                if cut_id > 1 && bases_constraints[[iter, cut_id-1]] != basis_constraints
+                    bases_constraints[[iter, cut_id]] = basis_constraints
+                    bases_variables[[iter, cut_id]] = basis_variables
+                    if multi_cut
+                        cut_id += 1
+                        (objective_constraint_n - worst_objective) > constraint_tol ? worst_objective = objective_constraint_n : worst_objective = worst_objective
+                    else
+                        objective = objective_constraint_n
+                        worst_objective = objective_constraint_n
+                    end
+                elseif cut_id == 1
+                    bases_constraints[[iter, cut_id]] = basis_constraints
+                    bases_variables[[iter, cut_id]] = basis_variables
+                    if multi_cut
+                        cut_id += 1
+                        (objective_constraint_n - worst_objective) > constraint_tol ? worst_objective = objective_constraint_n : worst_objective = worst_objective
+                    else
+                        objective = objective_constraint_n
+                        worst_objective = objective_constraint_n
+                    end
+                end
             end
         end
         # TODO: add error messages for infeasible or unbounded uncertainty set scenarios
     end
-    return SPSolutionInfo(status, objective, basis_constraints, basis_variables)
+    return SPSolutionInfo(status, worst_objective, bases_constraints, bases_variables)
 end
