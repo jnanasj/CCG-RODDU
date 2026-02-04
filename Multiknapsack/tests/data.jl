@@ -4,15 +4,15 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
 
     # Generate random instance of the multiknapsack problem
     MKParams = MultiknapsackParameters(M=M, N=N, T=T, α=α)
-    MKParams.weight_factor = rand(rng, M, N)
-    MKParams.weight_limit = α*vec(sum(MKParams.weight_factor, dims=2))
-    MKParams.price = vec(5*rand(rng, N) + sum(MKParams.weight_factor, dims=1)'/2)
+    MKParams.weight_factor = rand(rng, M, N) # r_{mn}
+    MKParams.weight_limit = α*vec(sum(MKParams.weight_factor, dims=2)) # b_m
+    MKParams.price = vec(5*rand(rng, N) + sum(MKParams.weight_factor, dims=1)'/2) # p_n
 
     # Convert multiknapsack problem to general model
     if T == 0 # fixed recourse
         ModelParams = GeneralModelParameters(num_x = N, num_ξ = M, num_ξcons = M, num_ξset = 2*M+1)
 
-        # constraints
+        # constraints: Rx ≤ b
         ModelParams.a = MKParams.weight_factor
         ModelParams.b = MKParams.weight_limit
         ModelParams.bbar = LinearAlgebra.Diagonal(MKParams.weight_limit)
@@ -33,7 +33,7 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
     else # random recourse
         ModelParams = GeneralModelParameters(num_x = N, num_ξ = M*N, num_ξcons = M, num_ξset = 2*M*N+N)
 
-        # constraints
+        # constraints: Rx ≤ b
         ModelParams.a = MKParams.weight_factor
         ModelParams.b = MKParams.weight_limit
         for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) < T)
@@ -51,8 +51,7 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
         for (m, n) in ((m, n) for m in 1:M, n in 1:N if abs(m-n) < T)
             ModelParams.U[M*N + (m-1)*N+n, n] = 2
         end
-        # ∑_m ξ_mn <= (M/5)x_n
-        # ModelParams.v[2*M*N+1:2*M*N+N] .= (M/5)
+        # ∑_m ξ_mn <= (M/αN)x_n
         ModelParams.U[2*M*N+1:2*M*N+N, :] .= (M/(α*N))*LinearAlgebra.I(N)
         for m in 1:M, n in 1:N
             ModelParams.W[2*M*N+n, (m-1)*N+n] = 1

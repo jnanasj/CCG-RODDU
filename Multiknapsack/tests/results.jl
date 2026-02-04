@@ -28,9 +28,10 @@ function create_spreadsheet(method, M, N, T, α)
             sheet["C1"] = "solve time"
             sheet["D1"] = "Iters"
             sheet["E1"] = "Status"
-            sheet["F1"] = "num variables"
-            sheet["G1"] = "num cons"
-            sheet["H1"] = "num quad cons"
+            sheet["F1"] = "num cuts"
+            sheet["G1"] = "num variables"
+            sheet["H1"] = "num cons"
+            sheet["I1"] = "num quad cons"
 
             for instance_number in 1:10
                 XLSX.addsheet!(xf, "$(instance_number)")
@@ -39,7 +40,8 @@ function create_spreadsheet(method, M, N, T, α)
                 sheet["A1"] = "iteration"
                 sheet["B1"] = "MP objective"
                 sheet["C1"] = "MP gap"
-                sheet["D1"] = "Worst violation"
+                sheet["D1"] = "MP solve time"
+                sheet["E1"] = "Worst violation"
             end
         end
     end
@@ -75,18 +77,19 @@ function ccg_spreadsheet(CCGSol::CCGSolutionInfo, solvetime_ccg, instance_number
         sheet["C$(1+instance_number)"] = solvetime_ccg
         sheet["D$(1+instance_number)"] = CCGSol.num_iters
         sheet["E$(1+instance_number)"] = CCGSol.status
-        sheet["F$(1+instance_number)"] = CCGSol.num_variables
-        sheet["G$(1+instance_number)"] = CCGSol.num_constraints
-        sheet["H$(1+instance_number)"] = CCGSol.num_quad_constraints
+        sheet["F$(1+instance_number)"] = length(CCGSol.bases_constraints)
+        sheet["G$(1+instance_number)"] = CCGSol.num_variables
+        sheet["H$(1+instance_number)"] = CCGSol.num_constraints
+        sheet["I$(1+instance_number)"] = CCGSol.num_quad_constraints
 
         sheet = xf[instance_number+1]
         # instance results
-
         for i in 1:CCGSol.num_iters
             sheet["A$(1+i)"] = i
             sheet["B$(i+1)"] = CCGSol.objective[i]
             sheet["C$(i+1)"] = CCGSol.gap[i]
-            sheet["D$(i+1)"] = CCGSol.worst_constraint_violation[i]
+            sheet["D$(i+1)"] = CCGSol.solvetime[i]
+            sheet["E$(i+1)"] = CCGSol.worst_constraint_violation[i]
         end
     end
 end
