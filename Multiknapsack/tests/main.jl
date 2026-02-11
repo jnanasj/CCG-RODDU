@@ -1,7 +1,7 @@
-using Pkg
-Pkg.activate(".")
-Pkg.resolve() # resolves incompatible julia versions on MSI
-Pkg.instantiate()
+# using Pkg
+# Pkg.activate(".")
+# Pkg.resolve() # resolves incompatible julia versions on MSI
+# Pkg.instantiate()
 
 using Multiknapsack
 using XLSX, Random
@@ -22,9 +22,9 @@ problem_properties = Dict("1" => [20, 50, 0, 0.25],
     "7" => [50, 100, 0, 0.25],
     "8" => [50, 100, 0, 0.50],
     "9" => [50, 100, 0, 0.75],
-    "10" => [50, 200, 0, 0.25],
-    "11" => [50, 200, 0, 0.50],
-    "12" => [50, 200, 0, 0.75],
+    "10" => [100, 100, 0, 0.25],
+    "11" => [100, 100, 0, 0.50],
+    "12" => [100, 100, 0, 0.75],
     "13" => [100, 200, 0, 0.25],
     "14" => [100, 200, 0, 0.50],
     "15" => [100, 200, 0, 0.75]
@@ -51,20 +51,20 @@ problem_properties = Dict("1" => [20, 50, 0, 0.25],
 #     "18" => [50, 100, 50, 0.75],
 # )
 
-# specify mulitknapsack problem's size and properties
-M = Int(problem_properties[ARGS[1]][1]) # number of constraints/knapsacks
-N = Int(problem_properties[ARGS[1]][2]) # number of decision variables/items
-T = Int(problem_properties[ARGS[1]][3]) # if T == 0, fixed recourse; if T > 0, random recourse
-α = problem_properties[ARGS[1]][4] # tightness parameter
+# # specify mulitknapsack problem's size and properties
+# M = Int(problem_properties[ARGS[1]][1]) # number of constraints/knapsacks
+# N = Int(problem_properties[ARGS[1]][2]) # number of decision variables/items
+# T = Int(problem_properties[ARGS[1]][3]) # if T == 0, fixed recourse; if T > 0, random recourse
+# α = problem_properties[ARGS[1]][4] # tightness parameter
 
-# M = 20 # number of constraints/knapsacks
-# N = 50 # number of decision variables/items
-# T = 20 # if T == 0, fixed recourse; if T > 0, random recourse
-# α = 0.75 # tightness parameter
+M = 50 # number of constraints/knapsacks
+N = 100 # number of decision variables/items
+T = 50 # if T == 0, fixed recourse; if T > 0, random recourse
+α = 0.25 # tightness parameter
 
 # Specs
 TIME_LIMIT = 3600.0
-MP_TIME_LIMIT = 1000.0
+MP_TIME_LIMIT = 3600.0
 GAP = 0.001
 ITERS_MAX = 50
 BIG_M = 5e3

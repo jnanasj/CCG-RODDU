@@ -15,7 +15,7 @@ function data_generator(M::Int64, N::Int64, T::Int64, α::Float64, seed)
         # constraints: Rx ≤ b
         ModelParams.a = MKParams.weight_factor
         ModelParams.b = MKParams.weight_limit
-        ModelParams.bbar = LinearAlgebra.Diagonal(MKParams.weight_limit)
+        ModelParams.bbar = -LinearAlgebra.Diagonal(MKParams.weight_limit)
 
         # objective function: minimize
         ModelParams.cost_x = -MKParams.price
