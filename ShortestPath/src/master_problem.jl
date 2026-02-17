@@ -1,61 +1,61 @@
 # master problem in CCG algorithm
-function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, iter::Int64, timelimit, gap, big_M)
+function master_problem(params::ShortestPathParams, sol::CCGSolutionInfo, iter::Int64, timelimit, gap, big_M)
     masterproblem = Model(Gurobi.Optimizer)
     set_optimizer_attribute(masterproblem, "MIPGap", gap)
     set_optimizer_attribute(masterproblem, "TimeLimit", timelimit)
     # set_optimizer_attribute(masterproblem, MOI.Silent(), true)
 
     @variables(masterproblem, begin
-        0 <= x[1:params.num_x] <= 1 # specific to shortest path problem
-        y[1:params.num_y]
-        0 <= ξ[1:params.num_ξ] <= 1
+        0 <= x[1:params.num_edges] <= 1 # specific to shortest path problem
+        y[1:params.num_edges+1]
+        0 <= ξ[1:params.num_edges] <= 1
     end)
-    # specific to shortest path problem: 
-    set_binary.(x)
-    set_binary.(y[1:params.num_y_bin])
-    
+    set_binary.(y[1:params.num_edges])
+
     # linearization terms for ξ_e y_e
-    @variable(masterproblem, Ylin[1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0)
+    @variable(masterproblem, Ylin[1:params.num_edges], lower_bound = 0.0, upper_bound = 1.0)
+    Ylin_proj = Dict(i => @variable(masterproblem, [1:params.num_edges], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
 
     # uncertain parameters from active constraints
-    ξbases = Dict(i => @variable(masterproblem, [1:params.num_ξ]) for i in eachindex(sol.bases_constraints))
+    ξbases = Dict(i => @variable(masterproblem, [1:params.num_edges]) for i in eachindex(sol.bases_constraints))
 
     # uncertain parameter projections onto uncertainty set
-    ξbases_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
-    Ylin_proj = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
+    ξbases_proj = Dict(i => @variable(masterproblem, [1:params.num_edges], lower_bound = 0.0, upper_bound = 1.0) for i in eachindex(sol.bases_constraints))
 
     # projection distances
-    tbases = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
+    tbases = Dict(i => @variable(masterproblem, [1:params.num_edges], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
 
     # dual variables from projection problem
-    λplus = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
-    λnegative = Dict(i => @variable(masterproblem, [1:params.num_ξ], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
+    λplus = Dict(i => @variable(masterproblem, [1:params.num_edges], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
+    λnegative = Dict(i => @variable(masterproblem, [1:params.num_edges], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
     μ = Dict(i => @variable(masterproblem, [1:params.num_ξset], lower_bound = 0.0) for i in eachindex(sol.bases_constraints))
 
     # binary variables for big-M reformulation of complementarity conditions in projection problem
-    zλplus = Dict(i => @variable(masterproblem, [1:params.num_ξ], Bin) for i in eachindex(sol.bases_constraints))
-    zλnegative = Dict(i => @variable(masterproblem, [1:params.num_ξ], Bin) for i in eachindex(sol.bases_constraints))
+    zλplus = Dict(i => @variable(masterproblem, [1:params.num_edges], Bin) for i in eachindex(sol.bases_constraints))
+    zλnegative = Dict(i => @variable(masterproblem, [1:params.num_edges], Bin) for i in eachindex(sol.bases_constraints))
     zμ = Dict(i => @variable(masterproblem, [1:params.num_ξset], Bin) for i in eachindex(sol.bases_constraints))
 
     # constraints without uncertainty
-    @constraint(masterproblem, params.Atilde * x + params.Dtilde * y .<= params.btilde)
+    @constraints(masterproblem, begin
+        [n in 1:params.num_nodes; (n!=params.source && n!=params.sink)], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == 0
+        [n in [params.source]], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == -1
+        [n in [params.sink]], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == 1
+    end)
     # constraints with linearized y_e ξ_e
     @constraints(masterproblem, begin
-        [n in 1:params.num_ξcons], params.a[n, :]'x + params.d[n, :]'y + sum(params.Dbar[n, i, i] * Ylin[i] for i in 1:params.num_ξ) <= params.b[n] + ξ'params.bbar[n, :]
+        y[end] >= sum(params.cost*x[e]+params.distances[e][2]*(y[e]+Ylin[e]) for e in 1:params.num_edges)
         Ylin <= ξ
-        Ylin >= ξ - big_M * (1 .- y[1:params.num_y_bin])
-        Ylin <= big_M * y[1:params.num_y_bin]
+        Ylin >= ξ - (1 .- y[1:params.num_edges])
+        Ylin <= y[1:params.num_edges]
     end)
-    # @constraint(masterproblem, [n in 1:params.num_ξcons], params.a[n, :]'x + ξ'params.Abar[n, :, :] * x + params.d[n, :]'y + ξ'params.Dbar[n, :, :] * y <= params.b[n] + ξ'params.bbar[n, :])
 
     @constraints(masterproblem, begin
         # constraints with uncertainty
         # constraints with linearized y_e ξ_e
-        [k in eachindex(sol.bases_constraints), n in 1:params.num_ξcons], params.a[n, :]'x + params.d[n, :]'y + sum(params.Dbar[n, i, i] * Ylin_proj[k][i] for i in 1:params.num_ξ) <= params.b[n] + ξbases_proj[k]'params.bbar[n, :]
-
+        [k in eachindex(sol.bases_constraints)], y[end] >= sum(0.01*x[e]+params.distances[e][2]*(y[e]+Ylin_proj[k][e]) for e in 1:params.num_edges)
         [k in eachindex(sol.bases_constraints)], Ylin_proj[k] <= ξbases_proj[k]
-        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] >= ξbases_proj[k] - big_M * (1 .- y[1:params.num_y_bin])
-        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] <= big_M * y[1:params.num_y_bin]
+        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] >= ξbases_proj[k] - (1 .- y[1:params.num_edges])
+        [k in eachindex(sol.bases_constraints)], Ylin_proj[k] <= y[1:params.num_edges]
 
         # active constraints
         [k in eachindex(sol.bases_constraints)], params.W[sol.bases_constraints[k], sol.bases_variables[k]] * ξbases[k][sol.bases_variables[k]] .== params.v[sol.bases_constraints[k]] + params.U[sol.bases_constraints[k], :] * x
@@ -70,17 +70,17 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
         [k in eachindex(sol.bases_constraints)], λplus[k] - λnegative[k] + params.W'μ[k] .== 0
 
         # complementarity conditions from projection problem
-        [k in eachindex(sol.bases_constraints), j in 1:params.num_ξ], λplus[k][j] <= big_M * zλplus[k][j]
-        [k in eachindex(sol.bases_constraints), j in 1:params.num_ξ], (-tbases[k][j] + ξbases_proj[k][j] - ξbases[k][j]) >= -big_M * (1 - zλplus[k][j])
+        [k in eachindex(sol.bases_constraints), j in 1:params.num_edges], λplus[k][j] <= big_M * zλplus[k][j]
+        [k in eachindex(sol.bases_constraints), j in 1:params.num_edges], (-tbases[k][j] + ξbases_proj[k][j] - ξbases[k][j]) >= -big_M * (1 - zλplus[k][j])
 
-        [k in eachindex(sol.bases_constraints), j in 1:params.num_ξ], λnegative[k][j] <= big_M * zλnegative[k][j]
-        [k in eachindex(sol.bases_constraints), j in 1:params.num_ξ], (-tbases[k][j] - ξbases_proj[k][j] + ξbases[k][j]) >= -big_M * (1 - zλnegative[k][j])
+        [k in eachindex(sol.bases_constraints), j in 1:params.num_edges], λnegative[k][j] <= big_M * zλnegative[k][j]
+        [k in eachindex(sol.bases_constraints), j in 1:params.num_edges], (-tbases[k][j] - ξbases_proj[k][j] + ξbases[k][j]) >= -big_M * (1 - zλnegative[k][j])
 
         [k in eachindex(sol.bases_constraints), i in 1:params.num_ξset], μ[k][i] <= big_M * zμ[k][i]
         [k in eachindex(sol.bases_constraints), i in 1:params.num_ξset], (params.W[i, :]'ξbases_proj[k] - params.v[i] - params.U[i, :]'x) >= -big_M * (1 - zμ[k][i])
     end)
 
-    @objective(masterproblem, Min, params.cost_x'x + params.cost_y'y)
+    @objective(masterproblem, Min, y[end])
 
     if iter > 1
         set_start_value.(x, sol.x_sol)
@@ -95,6 +95,11 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
         gap = 100 * abs(objective - bound) / (1e-10 + abs(objective))
         x_sol = value.(x)
         y_sol = value.(y)
+
+    else
+        compute_conflict!(masterproblem)
+        iis_model, _ = copy_conflict(masterproblem)
+        write_to_file(iis_model, "iis.lp")
 
         # TODO: add error messages for infeasible or unbounded master problem; in case of unbounded, one resolution could be to add a vertex in the first iteration
     end

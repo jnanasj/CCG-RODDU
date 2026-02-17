@@ -1,6 +1,6 @@
 module ShortestPath
 
-using JuMP, Gurobi, SparseArrays
+using JuMP, Gurobi, SparseArrays, Graphs
 
 include("data_structures.jl")
 include("reformulation.jl")

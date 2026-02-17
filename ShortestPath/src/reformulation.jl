@@ -1,4 +1,4 @@
-function reformulation(params::GeneralModelParameters, timelimit, gap)
+function reformulation(params::ShortestPathParams, timelimit, gap)
     reformulation = Model(Gurobi.Optimizer)
     set_optimizer_attribute(reformulation, "TimeLimit", timelimit)
     set_optimizer_attribute(reformulation, "MIPGap", gap)
@@ -6,31 +6,27 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
 
     # model variables
     @variables(reformulation, begin
-        0 <= x[1:params.num_x] <= 1 # specific to shortest path problem
-        y[1:params.num_y]
+        0 <= x[1:params.num_edges] <= 1 # specific to shortest path problem
+        y[1:params.num_edges+1]
+        δ[1:params.num_ξset] >= 0 # dual variables
     end)
-    # specific to shortest path problem
-    set_binary.(x)
-    set_binary.(y[1:(params.num_y_bin)])
-
-    # dual variables
-    δ = Dict(n => @variable(reformulation, [1:params.num_ξset], lower_bound = 0.0) for n = 1:params.num_ξcons)
+    set_binary.(y[1:params.num_edges])
 
     @constraints(
         reformulation,
         begin
             # constraints without uncertainty
-            params.Atilde * x + params.Dtilde * y .<= params.btilde
+            [n in 1:params.num_nodes; (n!=params.source && n!=params.sink)], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == 0
+            [n in [params.source]], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == -1
+            [n in [params.sink]], sum(y[e] for e in 1:params.num_edges if dst(params.distances[e][1])==n) - sum(y[e] for e in 1:params.num_edges if src(params.distances[e][1])==n) == 1
 
             #constraints with uncertainty
-            [n in 1:params.num_ξcons], params.W'δ[n] .>= (params.Abar[n, :, :] * x + params.Dbar[n, :, :] * y - params.bbar[n, :])
-
-            # Constraints with bilinear terms
-            [n in 1:params.num_ξcons], (params.v + params.U * x)'δ[n] <= params.b[n] - params.a[n, :]'x - params.d[n, :]'y
+            y[end] >= sum(params.cost*x[e] + params.distances[e][2]*y[e] for e in 1:params.num_edges) + (params.v+params.U*x)'δ
+            [e in 1:params.num_edges], params.W[:, e]'δ .>= params.distances[e][2]*y[e]
         end
     )
 
-    @objective(reformulation, Min, params.cost_x'x + params.cost_y'y)
+    @objective(reformulation, Min, y[end])
     optimize!(reformulation)
 
     # SOLUTION INFO
