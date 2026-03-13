@@ -8,7 +8,7 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     @variables(masterproblem, begin
         x[1:params.num_x]
         y[1:params.num_y]
-        ξ[1:params.num_ξ]
+        # ξ[1:params.num_ξ]
     end)
     # specific to compressor train case study
     set_binary.(y[params.num_y-params.num_y_bin+1:params.num_y])
@@ -17,8 +17,8 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     set_lower_bound.(y[2:params.num_y], params.lower_y[2:params.num_y])
     set_upper_bound.(y[2:params.num_y], params.upper_y[2:params.num_y])
 
-    set_lower_bound.(ξ, params.lower_ξ)
-    set_upper_bound.(ξ, params.upper_ξ)
+    # set_lower_bound.(ξ, params.lower_ξ)
+    # set_upper_bound.(ξ, params.upper_ξ)
 
     # uncertain parameters from active constraints
     ξbases = Dict(i => @variable(masterproblem, [1:params.num_ξ]) for i in eachindex(sol.bases_constraints))
@@ -42,9 +42,10 @@ function master_problem(params::GeneralModelParameters, sol::CCGSolutionInfo, it
     # constraints without uncertainty
     @constraint(masterproblem, params.Atilde * x + params.Dtilde * y .<= params.btilde)
 
+    ξnom = zeros(params.num_ξ)
     @constraints(masterproblem, begin
         # constraints with uncertainty
-        [n in 1:params.num_ξcons], params.a[n, :]'x + ξ'params.Abar[n] * x + params.d[n, :]'y + ξ'params.Dbar[n] * y <= params.b[n] + ξ'params.bbar[n, :]
+        [n in 1:params.num_ξcons], params.a[n, :]'x + ξnom'params.Abar[n] * x + params.d[n, :]'y + ξnom'params.Dbar[n] * y <= params.b[n] + ξnom'params.bbar[n, :]
         [k in eachindex(sol.bases_constraints), n in 1:params.num_ξcons], params.a[n, :]'x + ξbases_proj[k]'params.Abar[n] * x + params.d[n, :]'y + ξbases_proj[k]'params.Dbar[n] * y <= params.b[n] + ξbases_proj[k]'params.bbar[n, :]
 
         # active constraints

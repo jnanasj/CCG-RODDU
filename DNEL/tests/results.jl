@@ -61,32 +61,3 @@ function results(ReformSol::ReformulationSolutionInfo, solvetime_reform, CCGSol:
         sheet["C18"] = vec(CCGSol.worst_constraint_violation')
     end
 end
-
-function ccg_spreadsheet(CCGSol::CCGSolutionInfo, solvetime_ccg, N, MULTI_CUT)
-    filename = string("M", M, "_N", N, "_T", T, "_a", Int(100*α), "_ccg.xlsx")
-    XLSX.openxlsx(filename, mode = "rw") do xf
-        sheet = xf[1]
-
-        # summary sheet
-        sheet["A$(1+instance_number)"] = instance_number
-        sheet["B$(1+instance_number)"] = CCGSol.objective[end]
-        # sheet["C$(1+instance_number)"] = sum(CCGSol.solvetime)
-        sheet["C$(1+instance_number)"] = solvetime_ccg
-        sheet["D$(1+instance_number)"] = CCGSol.num_iters
-        sheet["E$(1+instance_number)"] = CCGSol.status
-        sheet["F$(1+instance_number)"] = length(CCGSol.bases_constraints)
-        sheet["G$(1+instance_number)"] = CCGSol.num_variables
-        sheet["H$(1+instance_number)"] = CCGSol.num_constraints
-        sheet["I$(1+instance_number)"] = CCGSol.num_quad_constraints
-
-        sheet = xf[instance_number+1]
-        # instance results
-        for i in 1:CCGSol.num_iters
-            sheet["A$(1+i)"] = i
-            sheet["B$(i+1)"] = CCGSol.objective[i]
-            sheet["C$(i+1)"] = CCGSol.gap[i]
-            sheet["D$(i+1)"] = CCGSol.solvetime[i]
-            sheet["E$(i+1)"] = CCGSol.worst_constraint_violation[i]
-        end
-    end
-end

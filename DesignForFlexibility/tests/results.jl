@@ -1,88 +1,21 @@
 # Write results from reformulation and CCG to XLSX files
 
-function create_spreadsheet(method)
-    if method == "reformulation"
-        filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
-        XLSX.openxlsx(filename, mode = "w") do xf
-            sheet = xf[1]
+function results(ReformSol::ReformulationSolutionInfo, solvetime_reform, CCGSol::CCGSolutionInfo, solvetime_ccg, instance_number)
+    filename = string("results/results_low_beta.xlsx")
 
-            # column headings
-            sheet["A1"] = "instance"
-            sheet["B1"] = "objective"
-            sheet["C1"] = "gap"
-            sheet["D1"] = "solve time"
-            sheet["E1"] = "Status"
-            sheet["F1"] = "num variables"
-            sheet["G1"] = "num cons"
-            sheet["H1"] = "num quad cons"
-        end
-    end 
-    if method == "CCG"
-        filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
-        XLSX.openxlsx(filename, mode = "w") do xf
-            sheet = xf[1]
-
-            # column headings
-            sheet["A1"] = "instance"
-            sheet["B1"] = "objective"
-            sheet["C1"] = "solve time"
-            sheet["D1"] = "Iters"
-            sheet["E1"] = "Status"
-            sheet["F1"] = "num variables"
-            sheet["G1"] = "num cons"
-            sheet["H1"] = "num quad cons"
-
-            for instance_number in 1:10
-                XLSX.addsheet!(xf, "$(instance_number)")
-                sheet = xf[instance_number+1]
-                # instance results
-                sheet["A1"] = "iteration"
-                sheet["B1"] = "MP objective"
-                sheet["C1"] = "Worst violation"
-            end
-        end
-    end
-end
-
-function reformulation_spreadsheet(ReformSol::ReformulationSolutionInfo, instance_number)
-    filename = string("I", I, "_J", J, "_a", Int(100*α), "_reformulation.xlsx")
     XLSX.openxlsx(filename, mode = "rw") do xf
         sheet = xf[1]
 
-        # summary sheet
-        sheet["A$(1+instance_number)"] = instance_number
-        sheet["B$(1+instance_number)"] = ReformSol.objective
-        sheet["C$(1+instance_number)"] = ReformSol.gap
-        sheet["D$(1+instance_number)"] = ReformSol.solvetime
-        sheet["E$(1+instance_number)"] = string(ReformSol.status)
-        sheet["F$(1+instance_number)"] = ReformSol.num_variables
-        sheet["G$(1+instance_number)"] = ReformSol.num_constraints
-        sheet["H$(1+instance_number)"] = ReformSol.num_quad_constraints
-    end
-end
+        # summary sheet: reformulation
+        sheet["G$(instance_number+2)"] = solvetime_reform
+        sheet["E$(instance_number+2)"] = ReformSol.objective
+        sheet["K$(instance_number+2)"] = string(ReformSol.status)
 
-function ccg_spreadsheet(CCGSol::CCGSolutionInfo, instance_number)
-    filename = string("I", I, "_J", J, "_a", Int(100*α), "_ccg.xlsx")
-    XLSX.openxlsx(filename, mode = "rw") do xf
-        sheet = xf[1]
-
-        # summary sheet
-        sheet["A$(1+instance_number)"] = instance_number
-        sheet["B$(1+instance_number)"] = CCGSol.objective[end]
-        sheet["C$(1+instance_number)"] = sum(CCGSol.solvetime)
-        sheet["D$(1+instance_number)"] = CCGSol.num_iters
-        sheet["E$(1+instance_number)"] = CCGSol.status
-        sheet["F$(1+instance_number)"] = CCGSol.num_variables
-        sheet["G$(1+instance_number)"] = CCGSol.num_constraints
-        sheet["H$(1+instance_number)"] = CCGSol.num_quad_constraints
-
-        sheet = xf[instance_number+1]
-        # instance results
-
-        for i in 1:CCGSol.num_iters
-            sheet["A$(1+i)"] = i
-            sheet["B$(i+1)"] = CCGSol.objective[i]
-            sheet["C$(i+1)"] = CCGSol.worst_constraint_violation[i]
-        end
+        # summary sheet: PCP with projection
+        sheet["H$(3*instance_number)"] = solvetime_ccg
+        sheet["F$(3*instance_number)"] = CCGSol.objective[end]
+        sheet["I$(3*instance_number)"] = CCGSol.num_iters
+        sheet["J$(3*instance_number)"] = length(CCGSol.bases_constraints)
+        sheet["L$(3*instance_number)"] = string(CCGSol.status)
     end
 end

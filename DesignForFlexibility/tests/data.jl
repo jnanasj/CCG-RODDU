@@ -1,13 +1,11 @@
 # generates a random instance of the robust facility location problem and returns the general model form
-function data_generator(process_data_file, price_data_file)
+function data_generator(process_data_file, price_data_file, S::Int64, T::Int64)
     # read data files
     process_data = XLSX.readxlsx(process_data_file)
     price_data = XLSX.readxlsx(price_data_file)
 
     # compressor train data
-    DFFParams = DesignForFlexibilityParams(I=process_data["Design parameters"]["C2"], J=process_data["Design parameters"]["B2"], S=1, T=12, β=1e4)
-
-    # DFFParams.β = 1e4
+    DFFParams = DesignForFlexibilityParams(I=process_data["Design parameters"]["C2"], J=process_data["Design parameters"]["B2"], S=S, T=T, β=0.1)
 
     DFFParams.tank_cost[1] = process_data["Design parameters"]["E13"]
     DFFParams.tank_cost[2] = process_data["Design parameters"]["G13"]
@@ -59,7 +57,7 @@ function data_generator(process_data_file, price_data_file)
     # scaling_factor = 1
     scaling_factor = maximum(DFFParams.compressor_max)
     scaling_factor_obj = 365/DFFParams.S
-    ζ = 10
+    ζ = 24
 
     # objective function
     ModelParams.cost_x = -DFFParams.β * DFFParams.load_price / (scaling_factor*scaling_factor_obj)
@@ -82,9 +80,9 @@ function data_generator(process_data_file, price_data_file)
     ModelParams.upper_y[2+DFFParams.J:1+DFFParams.J+DFFParams.I] = DFFParams.compressor_max / scaling_factor
     ModelParams.lower_y[2+DFFParams.J+DFFParams.I:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T] .= DFFParams.load_min / scaling_factor
     ModelParams.upper_y[2+DFFParams.J+DFFParams.I:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T] .= DFFParams.load_max / scaling_factor
-    ModelParams.upper_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T] .= DFFParams.bigM
-    ModelParams.lower_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T+sum(t for t in 1:DFFParams.T)*DFFParams.S*DFFParams.I] .= -DFFParams.bigM
-    ModelParams.upper_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T+sum(t for t in 1:DFFParams.T)*DFFParams.S*DFFParams.I] .= DFFParams.bigM
+    ModelParams.upper_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T] .= DFFParams.bigM / scaling_factor
+    ModelParams.lower_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T+sum(t for t in 1:DFFParams.T)*DFFParams.S*DFFParams.I] .= -DFFParams.bigM / scaling_factor
+    ModelParams.upper_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T:1+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T+sum(t for t in 1:DFFParams.T)*DFFParams.S*DFFParams.I] .= DFFParams.bigM / scaling_factor
     ModelParams.upper_y[2+DFFParams.J+DFFParams.I+DFFParams.S*DFFParams.T+DFFParams.I*DFFParams.S*DFFParams.T+sum(t for t in 1:DFFParams.T)*DFFParams.S*DFFParams.I:ModelParams.num_y] .= 1
 
     ModelParams.lower_ξ .= 0.0
@@ -150,7 +148,6 @@ function data_generator(process_data_file, price_data_file)
                 end
             end
         end
-
 
         ModelParams.d[(2*DFFParams.I+DFFParams.J)*DFFParams.S*DFFParams.T+(j-1)*DFFParams.S*DFFParams.T+(s-1)*DFFParams.T+t, 1+j] = -1
         ModelParams.b[(2*DFFParams.I+DFFParams.J)*DFFParams.S*DFFParams.T+(j-1)*DFFParams.S*DFFParams.T+(s-1)*DFFParams.T+t] = sum(DFFParams.demand[j, (s-1)*DFFParams.T+tt] for tt in 1:t) / scaling_factor

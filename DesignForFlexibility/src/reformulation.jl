@@ -51,6 +51,10 @@ function reformulation(params::GeneralModelParameters, timelimit, gap)
         reformulation_solution.gap = 100 * abs(reformulation_solution.objective - reformulation_solution.bound) / ((1e-10) + abs(reformulation_solution.objective))
         reformulation_solution.x_sol = value.(x)
         reformulation_solution.y_sol = value.(y)
+    else
+        compute_conflict!(reformulation)
+        iis_model, _ = copy_conflict(reformulation)
+        write_to_file(iis_model, "iis_r.lp")
     end
     return reformulation_solution
 end
